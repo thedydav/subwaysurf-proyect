@@ -1,0 +1,10 @@
+Package: crs.mor.ga
+Name: subwaysurf Mod Menu
+Depends: mobilesubstrate
+Version: 1.0
+Architecture: iphoneos-arm
+Description: subwaysurf Mod Menu by cruis!
+Maintainer: cruis
+Author: cruis
+Section: Tweaks
+Homepage: sub
