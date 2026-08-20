@@ -1,15 +1,64 @@
+#import <UIKit/UIKit.h>
 #import "Macros.h"
+#import "Menu.h"
 
-void setup() {
-  [switches addSliderSwitch:NSSENCRYPT("speed")
-    description:NSSENCRYPT("Set speed")
-    minimumValue:0.0f
-    maximumValue:10.0f
-    sliderColor:UIColorFromHex(0x00ADF2)
-    offset:ENCRYPTOFFSET("0x29E827C")
-  ];
+// 1. Variable global para almacenar la velocidad del Slider
+float velocidadCurvaSlider = 1.0f;
+
+// 2. Definición del Hook para la función CurveAtTime (RVA: 0x29E827C) de Subway Surfers
+float (*old_CurveAtTime)(void *instance, float time);
+float new_CurveAtTime(void *instance, float time) {
+    if (instance != NULL) {
+        return velocidadCurvaSlider;
+    }
+    return old_CurveAtTime(instance, time);
 }
 
+// 3. Configuración de la interfaz gráfica del menú
+void setupMenu() {
+    [menu setFrameworkName:"UnityFramework"];
+    
+    // Método oficial de la plantilla de Joey para sliders según su documentación
+    [switches addSliderSwitch:NSSENCRYPT("Velocidad de Curva") 
+                 description:NSSENCRYPT("Modifica la aceleracion y velocidad en tiempo real") 
+                minimumValue:1.0f 
+                maximumValue:15.0f 
+                 sliderColor:UIColorFromHex(0xBD0000)];
+}
+
+// 4. Bucle nativo de actualización usando el método universal 'getValueFromSwitch'
+void iniciarBucleSlider() {
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        
+        // En esta plantilla todos los valores (textfields y sliders) se extraen con getValueFromSwitch
+        id valorSwitch = [switches getValueFromSwitch:NSSENCRYPT("Velocidad de Curva")];
+        
+        if (valorSwitch != nil) {
+            float valorActual = [valorSwitch floatValue];
+            if (valorActual > 0.0f) {
+                velocidadCurvaSlider = valorActual;
+            }
+        }
+        
+        // Llamada recursiva para mantener el bucle vivo
+        iniciarBucleSlider();
+    });
+}
+
+// 5. Inicializador de Theos (Inyección del Hook al abrir Subway Surfers)
+%ctor {
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        
+        // Offset de Subway Surfers obtenido del dumper
+        uintptr_t offsetCurva = getRealOffset(0x29E827C);
+        
+        // Activamos el Hook mediante MSHookFunction
+        MSHookFunction((void*)(offsetCurva), (void*)new_CurveAtTime, (void**)&old_CurveAtTime);
+        
+        // Iniciamos el temporizador en segundo plano
+        iniciarBucleSlider();
+    });
+}
 
 /**********************************************************************************************************
      You can customize the menu here
